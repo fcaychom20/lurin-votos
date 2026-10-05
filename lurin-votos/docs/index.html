@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lurín vota · seguimiento del conteo</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;800&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f3f6f4;--fg:#14262b;--mut:#5b6e72;--card:#fff;--line:#d5dfdc;--acc:#0b6e74}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1b1e;--fg:#e8f0ee;--mut:#8fa5a8;--card:#162529;--line:#26393d;--acc:#4fc3c9}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 "Public Sans",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:28px 18px 60px}
+h1{font:800 clamp(2rem,6vw,3.2rem)/1.05 Fraunces,Georgia,serif;margin:0 0 6px}
+.sub{color:var(--mut);margin:0 0 22px}
+.aviso{border-left:4px solid var(--acc);background:var(--card);padding:10px 14px;margin-bottom:22px;font-size:.9rem}
+.aviso.demo{border-color:#c0392b;font-weight:600}
+.prog{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:26px}
+.prog div{background:var(--card);border:1px solid var(--line);padding:14px}
+.prog b{display:block;font:800 1.9rem Fraunces,serif}
+.bar{display:block;height:6px;background:var(--line);margin-top:8px}.bar i{display:block;height:100%;background:var(--acc)}
+.fila{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.fila .n{font-weight:600}.fila .p{color:var(--mut);font-size:.88rem}
+.fila .v{text-align:right;font:800 1.3rem Fraunces,serif}.fila .vv{text-align:right;color:var(--mut);font-size:.85rem}
+.fila .bar{grid-column:1/-1}
+h2{font:600 1.3rem Fraunces,serif;margin:30px 0 10px}
+.graf{background:var(--card);border:1px solid var(--line);padding:12px;height:340px}
+footer{margin-top:30px;color:var(--mut);font-size:.82rem}
+</style>
+</head>
+<body>
+<main>
+  <h1>Lurín vota</h1>
+  <p class="sub" id="sub">Cargando…</p>
+  <div id="aviso"></div>
+  <div class="prog">
+    <div>Actas procesadas<b id="ap">–</b><span class="bar"><i id="apb" style="width:0"></i></span></div>
+    <div>Actas contabilizadas<b id="ac">–</b><span class="bar"><i id="acb" style="width:0"></i></span></div>
+  </div>
+  <div id="ranking"></div>
+  <h2>Evolución del conteo (% de votos)</h2>
+  <div class="graf"><canvas id="g"></canvas></div>
+  <footer>Fuente: ONPE. Resultados preliminares hasta la proclamación del JNE. Proyecto ciudadano independiente, sin vínculo oficial. Se actualiza solo cada pocos minutos.</footer>
+</main>
+<script>
+const COL=["#0b6e74","#d9822b","#7b4fa0","#c0392b","#4f8a3b","#3a6ea5"];
+let chart;
+async function cargar(){
+  try{
+    const d=await (await fetch("datos.json?t="+Date.now())).json();
+    const L=d.lecturas||[]; if(!L.length) throw 0;
+    const u=L[L.length-1];
+    document.getElementById("sub").textContent="Última actualización: "+new Date(d.actualizado).toLocaleString("es-PE");
+    document.getElementById("aviso").innerHTML=d.demo
+      ?'<div class="aviso demo">DATOS DE PRUEBA: no son resultados reales.</div>'
+      :'<div class="aviso">Resultados preliminares de la ONPE para el distrito de '+d.distrito+'.</div>';
+    for(const [id,v] of [["ap",u.actasProcesadas],["ac",u.actasContabilizadas]]){
+      const ok=typeof v==="number";
+      document.getElementById(id).textContent=ok?v.toFixed(1)+"%":"–";
+      document.getElementById(id+"b").style.width=ok?v+"%":"0";
+    }
+    const tot=u.candidatos.reduce((s,c)=>s+c.votos,0)||1;
+    const orden=[...u.candidatos].sort((a,b)=>b.votos-a.votos);
+    document.getElementById("ranking").innerHTML=orden.map(c=>{
+      const p=c.votos/tot*100;
+      return `<div class="fila"><span class="n">${c.nombre}</span><span class="v">${p.toFixed(2)}%</span>
+      <span class="p">${c.partido}</span><span class="vv">${c.votos.toLocaleString("es-PE")} votos</span>
+      <span class="bar"><i style="width:${p}%"></i></span></div>`}).join("");
+    const ds=orden.map((c,i)=>({label:c.nombre,borderColor:COL[i%COL.length],tension:.25,pointRadius:0,borderWidth:2.5,
+      data:L.map(l=>{const t=l.candidatos.reduce((s,x)=>s+x.votos,0)||1;
+        const m=l.candidatos.find(x=>x.nombre===c.nombre);return m?+(m.votos/t*100).toFixed(2):null})}));
+    const labels=L.map(l=>new Date(l.hora).toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"}));
+    if(chart){chart.data.labels=labels;chart.data.datasets=ds;chart.update("none")}
+    else chart=new Chart(document.getElementById("g"),{type:"line",data:{labels,datasets:ds},
+      options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      scales:{y:{ticks:{callback:v=>v+"%"}}}}});
+  }catch(e){document.getElementById("sub").textContent="Aún no hay datos. Vuelve a intentar en unos minutos."}
+}
+cargar(); setInterval(cargar,60000);
+</script>
+</body>
+</html>
