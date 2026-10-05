@@ -29,7 +29,14 @@ jobs:
         run: mvn -q compile exec:java
       - name: Guardar cambios
         run: |
-          git config user.name "bot-lurin"
+          ggit config user.name "bot-lurin"
           git config user.email "bot@users.noreply.github.com"
           git add docs/datos.json
-          git diff --staged --quiet || (git pull --rebase && git commit -m "Actualización automática" && git push)
+          if git diff --staged --quiet; then exit 0; fi
+          git commit -m "Actualización automática"
+          git pull --rebase
+          git push
+
+
+
+          
