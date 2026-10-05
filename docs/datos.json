@@ -1,7 +1,7 @@
 {
   "distrito" : "Lurín",
   "demo" : true,
-  "actualizado" : "2026-10-05T04:34:12.096500814-05:00[America/Lima]",
+  "actualizado" : "2026-10-05T13:49:34.699919454-05:00[America/Lima]",
   "lecturas" : [ {
     "actasProcesadas" : 6.5,
     "actasContabilizadas" : 5.9,
@@ -44,5 +44,26 @@
       "votos" : 279
     } ],
     "hora" : "2026-10-05T04:34:12.096500814-05:00[America/Lima]"
+  }, {
+    "actasProcesadas" : 19.5,
+    "actasContabilizadas" : 17.6,
+    "candidatos" : [ {
+      "nombre" : "Candidato A (demo)",
+      "partido" : "Partido 1",
+      "votos" : 807
+    }, {
+      "nombre" : "Candidato B (demo)",
+      "partido" : "Partido 2",
+      "votos" : 675
+    }, {
+      "nombre" : "Candidato C (demo)",
+      "partido" : "Partido 3",
+      "votos" : 563
+    }, {
+      "nombre" : "Candidato D (demo)",
+      "partido" : "Partido 4",
+      "votos" : 418
+    } ],
+    "hora" : "2026-10-05T13:49:34.699919454-05:00[America/Lima]"
   } ]
 }
